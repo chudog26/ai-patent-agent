@@ -9,7 +9,6 @@ import {
   Calculator,
   History,
   User,
-  MessageSquare,
   Settings,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -24,13 +23,6 @@ const NAV_ITEMS = [
   { href: '/history', label: '历史记录', icon: History },
   { href: '/profile', label: '个人中心', icon: User },
 ] as const;
-
-/** 外部链接（飞书寄语墙） */
-const EXTERNAL_LINK = {
-  href: 'https://xi6ihdbltx.feishu.cn/wiki/IoaxwF3tRi3BOskgneLc7k3LnVg?from=from_copylink',
-  label: '寄语',
-  icon: MessageSquare,
-};
 
 const ITEM_BASE =
   'inline-flex h-8 shrink-0 items-center gap-2 rounded-lg px-2.5 text-sm font-medium transition-colors sm:h-9 sm:px-3';
@@ -75,16 +67,6 @@ export function Navigation() {
                 </Link>
               );
             })}
-
-            <a
-              href={EXTERNAL_LINK.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(ITEM_BASE, ITEM_IDLE)}
-            >
-              <MessageSquare className="size-4" />
-              <span className="hidden sm:inline">{EXTERNAL_LINK.label}</span>
-            </a>
           </nav>
 
           <div className="shrink-0">
