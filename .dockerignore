@@ -1,0 +1,30 @@
+node_modules
+.next
+.git
+.gitignore
+out
+dist
+build
+
+# 环境变量绝不进镜像
+.env
+.env.local
+.env.*.local
+
+# 运行时与日志
+*.log
+logs
+npm-debug.log*
+pnpm-debug.log*
+
+# 编辑器 / 系统
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# 本地杂项
+coverage
+*.tsbuildinfo
+README.md
+__*.log

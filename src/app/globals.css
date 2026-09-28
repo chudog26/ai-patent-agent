@@ -1,0 +1,429 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+ * 设计令牌
+ *
+ * 原则：
+ * 1. 中性色为主（近灰阶），只有一个低饱和「墨蓝」强调色，仅用于链接、选中态、
+ *    焦点环和少量关键标识。不使用紫/粉/彩虹渐变。
+ * 2. 层级靠「明度分层 + 阴影」，不靠描边。卡片、面板一律无边框，用
+ *    bg-card / bg-muted 与背景拉开色阶区分。
+ *    ★ 唯一例外是「可交互控件」——输入框 / 文本域 / 选择器 / 次按钮 / 单选圆点：
+ *    它们必须有「填充 + 一根发丝线」两件套。控件轮廓属于可用性，不是装饰性的
+ *    「边条」；没有轮廓，用户根本看不出哪里能填。
+ *    注意令牌分工：--input 是「控件描边色」，--field 是「控件填充色」，
+ *    两者语义不同，不要互相顶替（曾把 --input 当填充色用，导致 border-input 隐形）。
+ * 3. 表面色阶必须拉开到能看出来的程度：亮色下 background 0.966 / card 1.0 /
+ *    muted 0.940，三档之间至少差 0.026 亮度，否则「分区边界」会糊在一起。
+ * 4. 表面令牌「不要随手加透明度」。实体面板一律用不透明的 bg-card / bg-muted；
+ *    只有真正的覆盖层（loading 蒙层）才允许 bg-card/95。半透明的实体表面会让
+ *    下层内容透出来，是「各页背景色调不统一」的根源。
+ * 5. 亮暗两套值语义一一对应，组件只使用语义类名（bg-card、text-muted-foreground
+ *    等），任何地方都不再写死 gray-500 / indigo-600 之类的具体色阶。
+ * ------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * 排版尺度（唯一来源）
+ *
+ * 页面里不要各写一套字号，统一用下面这些类：
+ *   .page-header   页面顶部标题区（与导航同为卡片色，形成连续顶栏）
+ *   .page-title    页面主标题
+ *   .page-subtitle 页面副标题 / 说明
+ *   .lead-title    卡片、弹窗、面板的主标题
+ *   .section-title 区块小标题
+ *   .label-text    表单标签、行内强调
+ *   .body-text     正文
+ *   .row-title    列表行标题（一条记录的标题）
+ *   .reading-body  长文阅读正文（专利摘要/说明书/权利要求等成段内容）
+ *   .meta-text     次要说明
+ *   .stat-value    数值（等宽数字，避免跳动）
+ *
+ * 字号梯度：page-title 20→24 > lead-title 18 > section-title 16
+ *          > reading-body 16→18（成段阅读） > body 14 > meta 12
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .page-header {
+    @apply border-b border-border bg-card px-2 py-4 sm:px-4 sm:py-6;
+  }
+  .page-title {
+    @apply text-xl font-bold tracking-tight sm:text-2xl;
+  }
+  .page-subtitle {
+    @apply text-xs text-muted-foreground sm:text-sm;
+  }
+  .lead-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+  .section-title {
+    @apply text-base font-semibold text-foreground;
+  }
+  /* 列表行标题 / 卡片内小节名：比 section-title 小一档，
+     用于用户名、灵感标题这类「一条记录的标题」 */
+  .row-title {
+    @apply text-sm font-semibold text-foreground;
+  }
+  .label-text {
+    @apply text-sm font-medium text-foreground;
+  }
+  .body-text {
+    @apply text-sm leading-relaxed text-foreground;
+  }
+  /* 成段正文（专利摘要/说明书/权利要求）：比界面文字大一档，便于长时间阅读。
+     配合 bg-muted 内嵌面板使用，形成「卡片里的纸面」层次，无需描边 */
+  .reading-body {
+    @apply text-base leading-relaxed text-foreground sm:text-lg;
+  }
+  .meta-text {
+    @apply text-sm text-muted-foreground;
+  }
+  .stat-value {
+    @apply text-2xl font-bold tabular-nums;
+  }
+  /* 页面级「头号指标」专用（如审查总评分）：比 stat-value 大一档，
+     只用于每页最多一个的展示性大数字，不要用在列表内的金额上 */
+  .stat-hero {
+    @apply text-4xl font-bold tracking-tight tabular-nums;
+  }
+  /* 表单控件统一外观：填充 + 发丝轮廓。
+     任何 <input> / <textarea> / <select> 都套这个类；
+     绝对不要再往控件上写 bg-card —— 控件落在卡片里会与卡片同白，直接隐形。
+     控件填充色故意取到接近纯白(0.985)，靠 border-input 画轮廓，
+     这样无论控件落在 card / muted / background 之上都一样清楚。 */
+  .field {
+    @apply border border-input bg-field text-foreground;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* 强调色：低饱和墨蓝 */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-subtle-foreground: var(--brand-subtle-foreground);
+
+  /* 状态色：每色三件套 —— 实色 solid / 底纹 subtle / 底纹上的文字 subtle-foreground。
+     与 brand-subtle 同一套用法，禁止再用 bg-success/12 这类半透明写法：
+     半透明底纹叠在不同表面上会偏色，是「各页色调不一致」的来源之一。 */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+
+  --color-border: var(--border);
+  /* 控件描边色（不是填充色） */
+  --color-input: var(--input);
+  /* 控件填充色 */
+  --color-field: var(--field);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* 阴影：分「贴合 / 抬起 / 浮层」三级 */
+  --shadow-soft: var(--shadow-soft-value);
+  --shadow-lift: var(--shadow-lift-value);
+  --shadow-pop: var(--shadow-pop-value);
+
+  --font-sans:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --font-serif:
+    'Noto Serif SC', 'Songti SC', 'SimSun', ui-serif, Georgia, Cambria,
+    'Times New Roman', Times, serif;
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* 页面底色明显比卡片深，卡片是纯白，靠色阶而不是描边来区分层级。
+     三档：background 0.966 / muted 0.940 / card 1.0 */
+  --background: oklch(0.9660 0.0060 252);
+  --foreground: oklch(0.1700 0.0120 258);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1700 0.0120 258);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1700 0.0120 258);
+
+  /* 主操作：墨色（带一点蓝的近黑），克制、耐看 */
+  --primary: oklch(0.2100 0.0140 258);
+  --primary-foreground: oklch(0.9850 0.0030 252);
+
+  /* 次级填充：浅灰，用作按钮/标签/区块底 */
+  --secondary: oklch(0.9430 0.0070 252);
+  --secondary-foreground: oklch(0.2200 0.0130 258);
+  --muted: oklch(0.9400 0.0080 252);
+  --muted-foreground: oklch(0.5050 0.0110 255);
+  --accent: oklch(0.9280 0.0095 252);
+  --accent-foreground: oklch(0.2200 0.0130 258);
+
+  /* 强调色：低饱和墨蓝，用于链接 / 选中 / 焦点 / 图标标识 */
+  --brand: oklch(0.5000 0.1200 252);
+  --brand-foreground: oklch(0.9900 0 0);
+  --brand-subtle: oklch(0.9450 0.0200 252);
+  --brand-subtle-foreground: oklch(0.4200 0.1300 252);
+
+  /* 状态色：solid 用于图标/进度条等实色，subtle 用于徽标/提示条底纹 */
+  --success: oklch(0.5300 0.1150 155);
+  --success-foreground: oklch(0.9900 0 0);
+  --success-subtle: oklch(0.9450 0.0350 155);
+  --success-subtle-foreground: oklch(0.4200 0.1100 155);
+
+  --warning: oklch(0.6300 0.1200 72);
+  --warning-foreground: oklch(0.9900 0 0);
+  --warning-subtle: oklch(0.9550 0.0400 80);
+  --warning-subtle-foreground: oklch(0.4600 0.1000 68);
+
+  --info: oklch(0.5200 0.1000 240);
+  --info-foreground: oklch(0.9900 0 0);
+  --info-subtle: oklch(0.9450 0.0300 240);
+  --info-subtle-foreground: oklch(0.4200 0.1200 245);
+
+  --destructive: oklch(0.5500 0.1800 27);
+  --destructive-foreground: oklch(0.9900 0 0);
+  --destructive-subtle: oklch(0.9500 0.0300 27);
+  --destructive-subtle-foreground: oklch(0.4700 0.1700 27);
+
+  /* border 既是分区线，也是控件轮廓线；亮色下压到 0.885 让轮廓看得见 */
+  --border: oklch(0.8850 0.0070 252);
+  /* 控件描边色 */
+  --input: oklch(0.8700 0.0080 252);
+  /* 控件填充色：接近纯白，靠描边画轮廓，因此落在任何表面上都清楚 */
+  --field: oklch(0.9850 0.0030 252);
+  --ring: oklch(0.5300 0.1200 252);
+
+  --chart-1: oklch(0.5 0.12 252);
+  --chart-2: oklch(0.6 0.1 190);
+  --chart-3: oklch(0.66 0.12 72);
+  --chart-4: oklch(0.56 0.13 20);
+  --chart-5: oklch(0.58 0.04 285);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.1700 0.0120 258);
+  --sidebar-primary: oklch(0.2100 0.0140 258);
+  --sidebar-primary-foreground: oklch(0.9850 0.0030 252);
+  --sidebar-accent: oklch(0.9430 0.0070 252);
+  --sidebar-accent-foreground: oklch(0.2200 0.0130 258);
+  --sidebar-border: oklch(0.8850 0.0070 252);
+  --sidebar-ring: oklch(0.5300 0.1200 252);
+
+  /* 阴影用「冷调墨色」而不是纯黑：纯黑投影在冷灰背景上会发脏、发闷 */
+  --shadow-soft-value: 0 1px 2px 0 oklch(0.22 0.04 262 / 0.06), 0 3px 10px -3px oklch(0.22 0.04 262 / 0.1);
+  --shadow-lift-value: 0 2px 4px -1px oklch(0.22 0.04 262 / 0.07), 0 10px 24px -8px oklch(0.22 0.04 262 / 0.14);
+  --shadow-pop-value: 0 8px 16px -6px oklch(0.22 0.04 262 / 0.13), 0 24px 48px -12px oklch(0.22 0.04 262 / 0.19);
+}
+
+.dark {
+  --background: oklch(0.1520 0.0100 258);
+  --foreground: oklch(0.9550 0.0060 252);
+
+  --card: oklch(0.2150 0.0120 258);
+  --card-foreground: oklch(0.9550 0.0060 252);
+  --popover: oklch(0.2350 0.0130 258);
+  --popover-foreground: oklch(0.9550 0.0060 252);
+
+  /* 暗色下主操作反转为近白，保持「墨色即主色」的一致语义 */
+  --primary: oklch(0.9450 0.0060 252);
+  --primary-foreground: oklch(0.1900 0.0130 258);
+
+  --secondary: oklch(0.2680 0.0130 258);
+  --secondary-foreground: oklch(0.9550 0.0060 252);
+  --muted: oklch(0.2620 0.0130 258);
+  --muted-foreground: oklch(0.6800 0.0110 255);
+  --accent: oklch(0.2900 0.0140 258);
+  --accent-foreground: oklch(0.9550 0.0060 252);
+
+  --brand: oklch(0.7200 0.1050 252);
+  --brand-foreground: oklch(0.1600 0.0080 258);
+  --brand-subtle: oklch(0.2850 0.0450 252);
+  --brand-subtle-foreground: oklch(0.8200 0.0800 252);
+
+  --success: oklch(0.7200 0.1200 155);
+  --success-foreground: oklch(0.1600 0.0080 258);
+  --success-subtle: oklch(0.2800 0.0450 155);
+  --success-subtle-foreground: oklch(0.8200 0.0900 155);
+
+  --warning: oklch(0.7900 0.1150 78);
+  --warning-foreground: oklch(0.1600 0.0080 258);
+  --warning-subtle: oklch(0.2900 0.0500 80);
+  --warning-subtle-foreground: oklch(0.8500 0.0900 82);
+
+  --info: oklch(0.7200 0.0900 240);
+  --info-foreground: oklch(0.1600 0.0080 258);
+  --info-subtle: oklch(0.2850 0.0400 240);
+  --info-subtle-foreground: oklch(0.8200 0.0700 240);
+
+  --destructive: oklch(0.6500 0.1700 25);
+  --destructive-foreground: oklch(0.1600 0.0080 258);
+  --destructive-subtle: oklch(0.2850 0.0500 27);
+  --destructive-subtle-foreground: oklch(0.8200 0.1000 27);
+
+  /* 暗色下同样是「分区线 + 控件描边」两用；输入底沉到卡片之下，形成凹槽 */
+  --border: oklch(0.3000 0.0120 258);
+  --input: oklch(0.3150 0.0130 258);
+  --field: oklch(0.1800 0.0110 258);
+  --ring: oklch(0.7200 0.1050 252);
+
+  --chart-1: oklch(0.72 0.11 252);
+  --chart-2: oklch(0.72 0.09 190);
+  --chart-3: oklch(0.78 0.11 78);
+  --chart-4: oklch(0.68 0.13 20);
+  --chart-5: oklch(0.7 0.05 285);
+
+  --sidebar: oklch(0.1900 0.0120 258);
+  --sidebar-foreground: oklch(0.9550 0.0060 252);
+  --sidebar-primary: oklch(0.9450 0.0060 252);
+  --sidebar-primary-foreground: oklch(0.1900 0.0130 258);
+  --sidebar-accent: oklch(0.2680 0.0130 258);
+  --sidebar-accent-foreground: oklch(0.9550 0.0060 252);
+  --sidebar-border: oklch(0.3000 0.0120 258);
+  --sidebar-ring: oklch(0.7200 0.1050 252);
+
+  --shadow-soft-value: 0 1px 2px 0 oklch(0.1 0.02 262 / 0.36), 0 3px 10px -3px oklch(0.1 0.02 262 / 0.42);
+  --shadow-lift-value: 0 2px 4px -1px oklch(0.1 0.02 262 / 0.4), 0 10px 24px -8px oklch(0.1 0.02 262 / 0.52);
+  --shadow-pop-value: 0 8px 16px -6px oklch(0.1 0.02 262 / 0.47), 0 24px 48px -12px oklch(0.1 0.02 262 / 0.62);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  ::selection {
+    background-color: var(--brand);
+    color: var(--brand-foreground);
+  }
+
+  /* 数字型内容使用等宽字形，避免跳动 */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* 滚动条：两套模式都用中性色，细一点、不抢眼 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--foreground) 20%, transparent);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--foreground) 32%, transparent);
+}
+
+/* 防止移动端宽度溢出 */
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+}
+
+input,
+textarea,
+button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* 长文（专利正文等）阅读排版 */
+.prose-doc {
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+}
+
+.prose-doc p {
+  margin-bottom: 0.85em;
+}

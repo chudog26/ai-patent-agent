@@ -1,0 +1,87 @@
+# =============================================================================
+# 开发环境：只把「基础设施」放进容器，应用本身在宿主机跑
+#
+#   docker compose -f docker-compose.dev.yml up -d     # 起 PostgreSQL（默认只起这个）
+#   pnpm dev                                          # 宿主机跑应用，热更新
+#
+# 为什么不把应用也放进容器：Windows 上源码 bind mount 性能很差，改一行代码要等
+# 容器重启，会丢掉 Next.js 毫秒级热更新的优势。这个 compose 的定位是
+# 「数据库、缓存、对象存储等基础设施容器化」，以后要加 Redis / MinIO / Qdrant，
+# 在下面追加一个 service 即可，不用装到宿主机上。
+#
+# 与 docker-compose.yml（部署用）的区别：
+#   - 数据卷名不同（pgdata-dev），两套互不干扰
+#   - 不构建应用镜像，启动快
+#   - 额外的 adminer（数据库可视化），profile 为 tools，按需启动
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: patent-agent-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      # 与 .env.example 里的 DATABASE_URL 保持一致，开箱即用。
+      # 若你在 .env 里改过 POSTGRES_PASSWORD，记得同步 .env.local 的 DATABASE_URL。
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: patent_agent
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+      # 首次启动自动建表（仅当数据卷为空时执行），省掉手动跑 pnpm db:init
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d patent_agent']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    ports:
+      # 若同时在本机跑过 docker-compose.yml（部署用），会占用 5432。
+      # 这时用 PG_PORT=5433 pnpm db:up，并同步改 .env.local 的 DATABASE_URL。
+      - '127.0.0.1:${PG_PORT:-5432}:5432'
+
+  # 数据库可视化：docker compose -f docker-compose.dev.yml --profile tools up -d
+  # 打开 http://localhost:8080 ，服务器填 postgres，账号/密码/库见上面
+  adminer:
+    image: adminer:latest
+    container_name: patent-agent-adminer
+    profiles: ['tools']
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${ADMINER_PORT:-8080}:8080'
+
+  # 可选：把应用也放进容器（profile: app）
+  #   docker compose -f docker-compose.dev.yml --profile app up
+  # 适合 Mac / Linux 团队；Windows 上 bind mount 慢，日常开发不推荐用这个。
+  app-dev:
+    profiles: ['app']
+    image: node:22-alpine
+    container_name: patent-agent-app-dev
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/patent_agent
+      DATABASE_SSL: 'false'
+      NODE_ENV: development
+      PORT: '5000'
+      SETTINGS_ENCRYPTION_KEY: ${SETTINGS_ENCRYPTION_KEY:-}
+    volumes:
+      - .:/app
+      # node_modules 用命名卷隔离，避免宿主机（Windows）装的那份污染容器
+      - node_modules-dev:/app/node_modules
+    ports:
+      - '5000:5000'
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+
+volumes:
+  pgdata-dev:
+    driver: local
+  node_modules-dev:
+    driver: local
